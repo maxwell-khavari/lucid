@@ -1,45 +1,70 @@
 # Lucid
 
-**A tiny neural fluid simulator that knows when it's wrong.**
+**A 5 MB neural network that runs a fluid simulation, and knows when it's wrong.**
 
-**[Try it in your browser](https://maxwell-khavari.github.io/lucid/)**: drag to stir, press Kick, and flip the safety net.
+**[Try it in your browser](https://maxwell-khavari.github.io/lucid/)**: drag to stir, press Kick, and flip the safety net off to watch it break.
 
-![Lucid with the safety net on and off](results/demo.gif)
+![Safety net off, safety net on, and the real solver, on identical input](results/demo.gif)
 
-AI surrogates can stand in for slow physics solvers, but they fail silently: nothing tells you when the output has stopped being right. Lucid is a 1.2M-parameter network (4.9 MB) that runs a 2D fluid one frame at a time and also predicts its own error. When it doubts itself, it hands that frame to the real solver.
+## At a glance
 
-## Result
+| | |
+|---|---|
+| **4x less error** | when the fluid is pushed outside anything it trained on: 24.6% falls to 6.1% |
+| **14% of frames** | is all it hands to the real solver to get there |
+| **0.99 AUROC** | at ranking its own worst frames, learned with no physics rules written in |
+| **3x better** | than spending the same solver budget on random or scheduled frames (about 20% error) |
+| **5 MB, 60 fps** | in a browser tab, with no server and no install |
+| **2.3 hours** | to train from scratch on a single Apple M4, with zero external data and zero downloads |
+
+## Why this matters
+
+Neural surrogates are replacing slow simulators in weather forecasting, engineering CFD, chip thermals and digital twins. They are fast, and they share one dangerous habit: when the input drifts outside what they learned, they keep producing confident, plausible output that is wrong. Nothing raises a flag.
+
+Lucid shows the fix as a working thing you can touch. The network predicts its own error, frame by frame. When that prediction says it's out of its depth, it defers to the trusted method for that frame. Everything else stays fast.
+
+You can watch this happen in the GIF above. A strong stir hits all three panes. The unprotected network glitches and never fully recovers. The protected one catches the moment, hands that frame to the solver, and stays locked to the truth.
+
+## Results
 
 ![Error against solver calls](results/headline.png)
 
-Results are on held-out episodes (24 episodes of 150 frames, in `results/eval.json`).
+The evaluation uses held-out episodes: 24 episodes of 150 frames each, in `results/eval.json`, and every number is reproducible.
 
-**When the fluid is pushed outside the training range** (sudden strong stirs on 10% of frames):
-- The network alone drifts to **24.6%** error against the real solver.
-- Lucid's self-check sends **14% of frames** to the solver and holds error at **6.1%**.
-- Spending a similar budget on random or scheduled frames only gets to **18 to 21%**.
-- The self-check flags its own bad frames with an **AUROC of 0.99**.
+**Pushed outside the training range** (sudden strong stirs on 10% of frames):
+
+| Gate | Solver frames | Error vs real solver |
+|---|---|---|
+| Network alone | 0% | 24.6% |
+| **Lucid's self-check** | **14%** | **6.1%** |
+| **Lucid's self-check** | **21%** | **4.7%** |
+| Random frames | 21% | 19.2% |
+| Every k-th frame | 20% | 18.4% |
+| Physics residual (velocity divergence) | 9% | 8.7% |
+| Hand-written "input out of range" rule | 20% | 6.7% |
+
+**Normal stirring:** the network is accurate on its own, at 0.6% error per frame and 6.2% averaged over 150 frames.
 
 **Baselines, stated plainly:**
-- At low budgets (under 10% solver frames), a physics check on the network's output does as well or slightly better. It is the divergence of the predicted velocity, which a true fluid keeps at zero.
-- A hand-written rule that knows exactly what an out-of-range stir looks like is ahead at a 10% budget.
-- From about 14% upward, the self-check gives the lowest error of any gate, and it needed no rule written for the case.
+- Below a 10% budget, the physics residual check matches or slightly beats the self-check.
+- At exactly 10%, the hand-written rule is ahead, because it was built for this exact disturbance.
+- Under normal stirring, the self-check is no better than a fixed schedule, because there is nothing unusual to catch.
+- From about 14% upward, the self-check gives the lowest error of every gate tested, and nobody had to write a rule for the failure.
 
-**Under normal stirring** the network is accurate on its own: 6.2% average error over 150 frames, and 0.6% per frame. Its self-check does no better than calling the solver on a fixed schedule, because nothing unusual is happening.
-
-The self-check earns its keep when inputs leave what the model learned. That is where silent failures happen.
-
-## What this is and isn't
-- **Is:** a small, complete, reproducible demonstration of a surrogate that estimates its own error and defers to a trusted method. You can play with it.
-- **Isn't:** a speedup. At 64x64 the classical solver is about as fast as the network. Surrogates save compute where the real method is expensive: 3D, high resolution, weather, engineering CFD. The self-check idea carries over to those settings, but this repo does not show that.
-- **Isn't:** a new research concept. Hybrid surrogate-plus-solver methods exist; see [Prior work](#prior-work). The new parts are a playable, open-weights, in-browser version and a direct comparison of gates.
+## What you can do with it
+- **Play with it:** [live demo](https://maxwell-khavari.github.io/lucid/), on desktop or phone.
+- **Use the weights:** `weights/lucid.pt` (PyTorch) or `web/lucid.onnx` (any ONNX runtime). Both are 4.9 MB.
+- **Test your own gate:** add a scoring function to `SCORES` in `eval/evaluate.py`. It is compared against every baseline on the same episodes.
+- **Reproduce everything:** follow the commands below.
 
 ## How it works
-1. **Solver.** `sim/solver.py` and `sim/solver.js` implement stable fluids (Stam 1999) on a 64x64 periodic grid: 4 substeps per frame, 80 Jacobi pressure iterations each. A test checks the Python and JS versions agree to within 1e-4.
+1. **Solver.** `sim/solver.py` and `sim/solver.js` implement stable fluids (Stam 1999) on a 64x64 periodic grid: 4 substeps per frame, 80 Jacobi pressure iterations each. A test checks the Python and browser versions agree to within 1e-4.
 2. **Data.** Random stirrers (`sim/forcing.py`) drive the solver while training runs. No dataset is stored or downloaded.
-3. **Model.** `lucid/model.py` is a U-Net with circular padding. One head predicts the next frame's change. The other predicts the per-cell error of that prediction.
-4. **Training.** `train.py` takes about 2.3 hours on an Apple M4. Inputs are true solver states, plus states the network drifted into by rolling itself forward, so the error head learns what its own mistakes look like.
-5. **Gate.** The score is the predicted error divided by the flow's size. Above the threshold, the solver takes the frame.
+3. **Model.** `lucid/model.py` is a 1.2M-parameter U-Net with circular padding and two heads:
+   - the next frame's change
+   - the per-cell error of that prediction
+4. **Training.** `train.py` feeds the network true solver states, plus states it drifted into by rolling itself forward. That way the error head learns what the network's own mistakes look like.
+5. **Gate.** The score is the predicted error divided by the flow's size. Above the threshold, the real solver takes the frame.
 
 ## Reproduce
 ```bash
@@ -48,10 +73,10 @@ python3 -m unittest discover tests              # JS and Python solvers agree
 python3 train.py --steps 24000                  # ~2.3 h on an M4, writes ckpt/lucid.pt
 python3 -m eval.evaluate                        # ~35 min, writes results/eval.json
 python3 -m eval.plots                           # writes results/headline.png
+python3 -m eval.gif                             # writes results/demo.gif
 python3 -m export.onnx                          # writes web/lucid.onnx, checks it against PyTorch
 python3 -m http.server 8000                     # then open http://localhost:8000/web/
 ```
-The trained weights are included: `web/lucid.onnx` for the browser and `weights/lucid.pt` for PyTorch.
 
 ## Use the model
 ```python
@@ -65,18 +90,33 @@ x = torch.zeros(1, 6, 64, 64)            # (u, v, d, fx, fy, s)
 y = model(x)                             # (next u, next v, next d, predicted error per cell)
 ```
 
-## Prior work
+## Limits
+- **No speedup at this size.** At 64x64 the classical solver is about as fast as the network. Surrogates save compute where the real method is expensive, such as 3D, high resolution or weather. The self-check pattern carries over to those settings, but this repo does not demonstrate it there.
+- **A toy 2D fluid.** It is not validated for any real-world use. See [MODEL_CARD.md](MODEL_CARD.md).
+- **The self-check is a signal, not a guarantee.** A low predicted error does not prove the output is right.
+
+## Credits and scope
+
+Lucid is a technical project. It measures and demonstrates how well a small surrogate can judge its own output, and what that judgement buys when deciding when to call a trusted solver.
+
+**It does not claim novelty.** Pairing a learned surrogate with a fallback to a classical solver, triggered by an error or residual signal, is established in prior work. Lucid's contributions are practical:
+- an open, reproducible implementation
+- a side-by-side comparison of gating strategies
+- a version anyone can run in a browser
+
+Prior work this builds on:
 - J. Stam, *Stable Fluids*, SIGGRAPH 1999. The reference solver.
 - XRePIT (arXiv:2510.21804). A deep-learning and CFD hybrid in OpenFOAM that falls back to the solver when a residual crosses a threshold.
 - Hybrid Neural-MPM (arXiv:2505.18926). A real-time neural fluid that falls back to a classical MPM solver.
 - Hybrid Neural World Models (arXiv:2605.28317). Uses a surrogate's error map to gate a reference-solver fallback.
-- A. Graves, *Adaptive Computation Time*, 2016, and related work on learning when to spend compute.
+- A. Graves, *Adaptive Computation Time for Recurrent Neural Networks*, 2016, and related work on learning when to spend compute.
 
-Lucid is an independent implementation. It is not affiliated with or endorsed by the authors above.
+Lucid is independent and is not affiliated with or endorsed by any of these authors.
 
 ## License and disclaimer
+
 Copyright 2026 Maxwell Khavari. Code and weights are licensed under the **[PolyForm Noncommercial License 1.0.0](LICENSE)**.
 - **Free:** personal use, research, education and nonprofit use.
 - **Commercial use:** needs written permission.
 
-This is a research demo of a toy 2D fluid. It is provided **as is, without warranty of any kind**. As far as the law allows, the author is not liable for any damages arising from its use. It is not validated for, and must not be used for, engineering, safety, medical, financial or any other real-world decision. See [MODEL_CARD.md](MODEL_CARD.md) for intended use and limits.
+This is a research demo of a toy 2D fluid. It is provided **as is, without warranty of any kind**. As far as the law allows, the author is not liable for any damages arising from its use. It is not validated for, and must not be used for, engineering, safety, medical, financial or any other real-world decision.
