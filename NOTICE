@@ -1,0 +1,7 @@
+Required Notice: Copyright 2026 Maxwell Khavari (https://github.com/maxwell-khavari/lucid)
+
+Lucid is licensed under the PolyForm Noncommercial License 1.0.0 (see LICENSE).
+Commercial use requires separate written permission from the copyright holder.
+
+The browser demo loads onnxruntime-web (MIT License, Copyright Microsoft Corporation) from a public CDN
+at runtime; it is not redistributed in this repository.

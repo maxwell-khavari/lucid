@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+ckpt/
+.DS_Store
+node_modules/
+.env
+.env.*
+*.pem
+*.key

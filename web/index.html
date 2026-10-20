@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lucid</title>
+<meta name="description" content="A tiny neural fluid simulator that knows when it is wrong.">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main>
+  <header>
+    <h1>Lucid</h1>
+    <p class="lede">A 5&nbsp;MB neural network is running this fluid. It also predicts its own error, and when it doubts itself it hands the frame to the real solver. Drag to stir, or press Kick to push it somewhere it has never been.</p>
+  </header>
+
+  <section class="panes">
+    <figure>
+      <canvas id="hybrid" width="512" height="512" aria-label="Lucid simulation, drag to stir"></canvas>
+      <figcaption><span class="tag">Lucid</span> <span id="who">network</span></figcaption>
+    </figure>
+    <figure>
+      <canvas id="truth" width="512" height="512" aria-label="Reference solver, same input"></canvas>
+      <figcaption><span class="tag">Real solver</span> same input, for comparison</figcaption>
+    </figure>
+  </section>
+
+  <section class="controls">
+    <div class="row">
+      <span class="label">Safety net</span>
+      <div class="seg" role="group" aria-label="Safety net">
+        <button id="net-on" aria-pressed="true">On</button>
+        <button id="net-off" aria-pressed="false">Off</button>
+      </div>
+      <label class="check"><input type="checkbox" id="doubt"> Show doubt</label>
+      <button id="kick" class="plain">Kick</button>
+      <button id="reset" class="plain">Reset</button>
+    </div>
+    <div class="row">
+      <label class="label" for="trust">Doubt threshold</label>
+      <input type="range" id="trust" min="0" max="100" value="30">
+      <span id="trust-v" class="num"></span>
+    </div>
+  </section>
+
+  <dl class="stats">
+    <div><dt>Frames by the network</dt><dd id="s-net" class="num">-</dd></div>
+    <div><dt>Handed to the solver</dt><dd id="s-solver" class="num">-</dd></div>
+    <div><dt>Error vs real solver</dt><dd id="s-err" class="num">-</dd></div>
+    <div><dt>Network says</dt><dd id="s-doubt" class="num">-</dd></div>
+  </dl>
+
+  <p id="status" class="note">Loading the model.</p>
+
+  <footer>
+    <p>Everything runs in your browser. The network (1.2M parameters) was trained only on data from the solver beside it. <a href="https://github.com/maxwell-khavari/lucid">Code, weights and method</a>.</p>
+    <p>A research demo of a toy 2D fluid, provided as is with no warranty. Not for engineering, safety or any real-world decision. Free for noncommercial use under the <a href="https://polyformproject.org/licenses/noncommercial/1.0.0">PolyForm Noncommercial License 1.0.0</a>.</p>
+  </footer>
+</main>
+<script>
+  // onnxruntime-web from jsDelivr, with unpkg as a fallback if the first CDN is unreachable.
+  window.ORT_CDNS = ["https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/", "https://unpkg.com/onnxruntime-web@1.20.1/dist/"];
+</script>
+<script type="module" src="app.js"></script>
+</body>
+</html>
