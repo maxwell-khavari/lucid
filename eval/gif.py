@@ -11,7 +11,7 @@ from lucid.model import Lucid
 from sim.forcing import Stirrers, splat
 from sim.solver import N, step
 
-PAPER, INK, ACCENT, MUTED = (235, 229, 215), (29, 27, 23), (180, 68, 28), (107, 101, 90)
+PAPER, INK, ACCENT, MUTED = (233, 236, 240), (14, 17, 22), (194, 24, 155), (91, 100, 114)
 SCALE, PAD, HEAD = 3, 14, 36
 THRESHOLD = 0.012
 KICKS = {40: (20, 40, 0.0), 75: (44, 18, 2.2), 110: (30, 30, 4.1)}
@@ -51,7 +51,7 @@ def main(out="results/demo.gif", frames=150):
         used = (SCORES["learned"](on, f, y) > THRESHOLD).item()
         on = step(on, f) if used else y[:, :3]
         ref = step(ref, f)
-        canvas = Image.new("RGB", (3 * w + 4 * PAD, w + HEAD + 2 * PAD + 40), (244, 240, 230))
+        canvas = Image.new("RGB", (3 * w + 4 * PAD, w + HEAD + 2 * PAD + 40), (243, 244, 246))
         dr = ImageDraw.Draw(canvas)
         panes = [(off, "Safety net off", MUTED), (on, "Safety net on", ACCENT if used else MUTED), (ref, "Real solver", MUTED)]
         for i, (s, label, col) in enumerate(panes):
@@ -65,7 +65,7 @@ def main(out="results/demo.gif", frames=150):
             dr.text((PAD + w + PAD, HEAD + PAD + w + 22), "doubt: solver took this frame", fill=ACCENT, font=small)
         if any(0 <= t - k < 6 for k in KICKS):
             dr.text((PAD + 2 * (w + PAD), HEAD + PAD + w + 6), "kick", fill=ACCENT, font=small)
-        images.append(canvas.quantize(colors=48, method=Image.Quantize.MEDIANCUT, dither=Image.Dither.NONE))
+        images.append(canvas.quantize(colors=96, method=Image.Quantize.MAXCOVERAGE, dither=Image.Dither.NONE))
     images[0].save(out, save_all=True, append_images=images[1:], duration=55, loop=0, optimize=True)
     print("wrote", out)
 

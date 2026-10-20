@@ -4,56 +4,119 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Lucid</title>
-<meta name="description" content="A tiny neural fluid simulator that knows when it is wrong.">
+<meta name="description" content="A 5 MB neural fluid simulator that predicts its own error and hands doubtful frames to the real solver.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <main>
-  <header>
-    <h1>Lucid</h1>
-    <p class="lede">A 5&nbsp;MB neural network is running this fluid. It also predicts its own error, and when it doubts itself it hands the frame to the real solver. Drag to stir, or press Kick to push it somewhere it has never been.</p>
+  <header class="top">
+    <div>
+      <h1>Lucid</h1>
+      <p class="lede">A 1.2M-parameter network runs this fluid and predicts its own error each frame. When the prediction crosses the threshold τ, the frame goes to the reference solver. Drag on channel A to stir, or press Kick to apply a forcing outside the training range.</p>
+    </div>
+    <dl class="meta">
+      <div><dt>Grid</dt><dd>64 × 64, periodic</dd></div>
+      <div><dt>Solver</dt><dd>Stable fluids, 4 × 80 Jacobi</dd></div>
+      <div><dt>Backend</dt><dd id="backend">loading</dd></div>
+    </dl>
   </header>
 
-  <section class="panes">
-    <figure>
-      <canvas id="hybrid" width="512" height="512" aria-label="Lucid simulation, drag to stir"></canvas>
-      <figcaption><span class="tag">Lucid</span> <span id="who">network</span></figcaption>
-    </figure>
-    <figure>
-      <canvas id="truth" width="512" height="512" aria-label="Reference solver, same input"></canvas>
-      <figcaption><span class="tag">Real solver</span> same input, for comparison</figcaption>
-    </figure>
-  </section>
-
-  <section class="controls">
-    <div class="row">
-      <span class="label">Safety net</span>
-      <div class="seg" role="group" aria-label="Safety net">
-        <button id="net-on" aria-pressed="true">On</button>
-        <button id="net-off" aria-pressed="false">Off</button>
+  <section class="channels">
+    <figure class="panel channel">
+      <figcaption class="chead">
+        <span class="cid">A</span>
+        <span class="cname">Hybrid: network, gated solver</span>
+        <span id="who" class="pill">network</span>
+      </figcaption>
+      <div class="plot">
+        <span class="ytick" style="top:0">0</span><span class="ytick" style="top:50%">32</span><span class="ytick" style="top:100%">64</span>
+        <canvas id="hybrid" width="512" height="512" aria-label="Channel A: Lucid hybrid simulation. Drag to stir."></canvas>
+        <div class="xticks"><span>0</span><span>32</span><span>64</span></div>
       </div>
-      <label class="check"><input type="checkbox" id="doubt"> Show doubt</label>
-      <button id="kick" class="plain">Kick</button>
-      <button id="reset" class="plain">Reset</button>
+      <div class="cbar"><span data-cbar="min">0</span><canvas class="cbar-grad" width="256" height="8"></canvas><span data-cbar="max">2</span><span class="cunit" data-cbar="unit">density d</span></div>
+    </figure>
+    <figure class="panel channel">
+      <figcaption class="chead">
+        <span class="cid">B</span>
+        <span class="cname">Reference: solver every frame</span>
+        <span class="pill">solver</span>
+      </figcaption>
+      <div class="plot">
+        <span class="ytick" style="top:0">0</span><span class="ytick" style="top:50%">32</span><span class="ytick" style="top:100%">64</span>
+        <canvas id="truth" width="512" height="512" aria-label="Channel B: reference solver on the same input"></canvas>
+        <div class="xticks"><span>0</span><span>32</span><span>64</span></div>
+      </div>
+      <div class="cbar"><span data-cbar="min">0</span><canvas class="cbar-grad" width="256" height="8"></canvas><span data-cbar="max">2</span><span class="cunit" data-cbar="unit">density d</span></div>
+    </figure>
+  </section>
+
+  <section class="lower">
+    <div class="panel controls">
+      <h2>Controls</h2>
+      <div class="ctl">
+        <span class="clabel">Safety net</span>
+        <div class="seg" role="group" aria-label="Safety net">
+          <button id="net-on" aria-pressed="true">On</button>
+          <button id="net-off" aria-pressed="false">Off</button>
+        </div>
+      </div>
+      <div class="ctl">
+        <span class="clabel">Field</span>
+        <div class="seg" role="group" aria-label="Field shown">
+          <button data-field="density" aria-pressed="true">Density</button>
+          <button data-field="speed" aria-pressed="false">Speed</button>
+          <button data-field="vorticity" aria-pressed="false">Vorticity</button>
+        </div>
+      </div>
+      <div class="ctl">
+        <span class="clabel">Overlay</span>
+        <label class="toggle"><input type="checkbox" id="doubt"><span>Show predicted error (ε̂) on A</span></label>
+      </div>
+      <div class="ctl">
+        <label class="clabel" for="trust">Threshold τ</label>
+        <input type="range" id="trust" min="0" max="100" value="30">
+        <span id="trust-v" class="mono"></span>
+      </div>
+      <div class="ctl actions">
+        <button id="kick" class="btn primary">Kick</button>
+        <button id="reset" class="btn">Reset</button>
+      </div>
     </div>
-    <div class="row">
-      <label class="label" for="trust">Doubt threshold</label>
-      <input type="range" id="trust" min="0" max="100" value="30">
-      <span id="trust-v" class="num"></span>
+
+    <div class="panel readouts">
+      <h2>Readouts</h2>
+      <dl class="grid">
+        <div><dt>Frame t</dt><dd id="r-frame" class="mono">0</dd></div>
+        <div><dt>Throughput</dt><dd class="mono"><span id="r-fps">0</span><u>frames/s</u></dd></div>
+        <div><dt>Network inference</dt><dd class="mono"><span id="r-inf">-</span><u>ms</u></dd></div>
+        <div><dt>Solver step</dt><dd class="mono"><span id="r-sol">-</span><u>ms</u></dd></div>
+        <div><dt>Network frames</dt><dd class="mono"><span id="s-net">-</span><u>of last 240</u></dd></div>
+        <div><dt>Solver frames</dt><dd class="mono"><span id="s-solver">-</span><u>of last 240</u></dd></div>
+        <div><dt>Handoffs total</dt><dd id="r-hand" class="mono">0</dd></div>
+        <div><dt>Predicted error ε̂</dt><dd class="mono"><span id="s-doubt">-</span></dd></div>
+        <div class="wide"><dt>Error of A vs B (relative L1)</dt><dd class="mono big"><span id="s-err">-</span></dd></div>
+      </dl>
     </div>
   </section>
 
-  <dl class="stats">
-    <div><dt>Frames by the network</dt><dd id="s-net" class="num">-</dd></div>
-    <div><dt>Handed to the solver</dt><dd id="s-solver" class="num">-</dd></div>
-    <div><dt>Error vs real solver</dt><dd id="s-err" class="num">-</dd></div>
-    <div><dt>Network says</dt><dd id="s-doubt" class="num">-</dd></div>
-  </dl>
+  <section class="traces">
+    <figure class="panel trace">
+      <figcaption><span class="tname">Predicted error ε̂</span><span class="tkey"><i class="k-line"></i>ε̂ <i class="k-dash"></i>τ <i class="k-tick"></i>handoff to solver</span></figcaption>
+      <canvas id="trace-doubt" aria-label="Predicted error over the last 300 frames, log scale, with the threshold and handoffs"></canvas>
+    </figure>
+    <figure class="panel trace">
+      <figcaption><span class="tname">Error of A vs B</span><span class="tkey">relative L1, %, last 300 frames</span></figcaption>
+      <canvas id="trace-err" aria-label="Error of the hybrid against the reference over the last 300 frames"></canvas>
+    </figure>
+  </section>
 
-  <p id="status" class="note">Loading the model.</p>
+  <p id="status" class="status">Loading the model.</p>
 
   <footer>
-    <p>Everything runs in your browser. The network (1.2M parameters) was trained only on data from the solver beside it. <a href="https://github.com/maxwell-khavari/lucid">Code, weights and method</a>.</p>
+    <p>Runs entirely in your browser. The network was trained only on data from the solver in channel B. <a href="https://github.com/maxwell-khavari/lucid">Code, weights and method</a></p>
     <p>A research demo of a toy 2D fluid, provided as is with no warranty. Not for engineering, safety or any real-world decision. Free for noncommercial use under the <a href="https://polyformproject.org/licenses/noncommercial/1.0.0">PolyForm Noncommercial License 1.0.0</a>.</p>
   </footer>
 </main>
