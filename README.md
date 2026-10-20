@@ -51,6 +51,22 @@ The evaluation uses held-out episodes: 24 episodes of 150 frames each, in `resul
 - Under normal stirring, the self-check is no better than a fixed schedule, because there is nothing unusual to catch.
 - From about 14% upward, the self-check gives the lowest error of every gate tested, and nobody had to write a rule for the failure.
 
+## More views
+
+**It knows *where* it's wrong, not just when.** This is the frame a strong stir hits. The error map the network predicts for itself lands on the region where it actually is wrong (pixel correlation r = 0.60).
+
+![Predicted vs actual error map](results/where_wrong.png)
+
+**One episode, three strong stirs.** The doubt spikes past τ, and the solver takes those frames. With the safety net off, error climbs to 35%. With it on, error stays near 10%.
+
+![Timeline of doubt, handoffs and error](results/timeline.png)
+
+**The instrument.** Channels A and B with colorbars, a choice of density, speed or vorticity field, live readouts, and traces of ε̂ against τ.
+
+| Light | Dark |
+|---|---|
+| ![Lucid UI, light](results/ui_light.png) | ![Lucid UI, dark](results/ui_dark.png) |
+
 ## What you can do with it
 - **Play with it:** [live demo](https://maxwell-khavari.github.io/lucid/), on desktop or phone.
 - **Use the weights:** `weights/lucid.pt` (PyTorch) or `web/lucid.onnx` (any ONNX runtime). Both are 4.9 MB.
@@ -74,6 +90,7 @@ python3 train.py --steps 24000                  # ~2.3 h on an M4, writes ckpt/l
 python3 -m eval.evaluate                        # ~35 min, writes results/eval.json
 python3 -m eval.plots                           # writes results/headline.png
 python3 -m eval.gif                             # writes results/demo.gif
+python3 -m eval.figures                         # writes results/where_wrong.png and results/timeline.png
 python3 -m export.onnx                          # writes web/lucid.onnx, checks it against PyTorch
 python3 -m http.server 8000                     # then open http://localhost:8000/web/
 ```
@@ -112,6 +129,8 @@ Prior work this builds on:
 - A. Graves, *Adaptive Computation Time for Recurrent Neural Networks*, 2016, and related work on learning when to spend compute.
 
 Lucid is independent and is not affiliated with or endorsed by any of these authors.
+
+The prior work and citations above were found with the help of AI-assisted (agentic) search. Titles, identifiers and one-line summaries may contain minor errors or discrepancies. Please check the original sources before relying on them, and open an issue if something is wrong.
 
 ## License and disclaimer
 
