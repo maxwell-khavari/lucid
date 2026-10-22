@@ -117,3 +117,11 @@ footer a { color: var(--muted); }
   .grid { grid-template-columns: repeat(2, 1fr); }
   .actions { padding-left: 0; }
 }
+
+.notes { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 12px; }
+.note p { margin: 0 0 10px; font-size: 14px; color: var(--ink); max-width: 68ch; }
+.note p.fine { font-size: 12.5px; color: var(--muted); margin: 0; }
+.refs { margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; font-size: 13px; color: var(--muted); }
+.refs a { color: var(--ink); }
+footer b { color: var(--muted); font-weight: 500; }
+@media (max-width: 860px) { .notes { grid-template-columns: 1fr; } }

@@ -1,0 +1,11 @@
+cff-version: 1.2.0
+message: "If you refer to this software, please cite it as below."
+title: "Lucid: a neural fluid simulator that knows when it's wrong"
+type: software
+authors:
+  - family-names: Khavari
+    given-names: Maxwell
+repository-code: "https://github.com/maxwell-khavari/lucid"
+url: "https://maxwell-khavari.github.io/lucid/"
+license: PolyForm-Noncommercial-1.0.0
+date-released: 2026-10-20

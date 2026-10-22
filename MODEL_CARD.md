@@ -9,7 +9,7 @@ A gate uses that prediction to hand frames it doubts to the real solver.
 
 - **Inputs:** the velocity (u, v) and smoke density (d), plus this frame's forcing (fx, fy, s).
 - **Outputs:** the next (u, v, d), plus a per-cell predicted error.
-- **Files:** `ckpt/lucid.pt` (PyTorch) and `web/lucid.onnx` (ONNX, opset 17). The two agree to within 2e-6.
+- **Files:** `weights/lucid.pt` (PyTorch) and `web/lucid.onnx` (ONNX, opset 17). The two agree to within 2e-6.
 
 ## Training data
 All data was generated during training by the solver in `sim/solver.py`. The forcing is random stirring, from `sim/forcing.py`. No external dataset, no third-party model, and no personal data were used.

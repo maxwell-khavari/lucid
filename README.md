@@ -8,13 +8,15 @@
 
 ## At a glance
 
+All numbers come from this repo's 2D toy benchmark (`results/eval.json`). They are not claims about any real-world system.
+
 | | |
 |---|---|
 | **4x less error** | when the fluid is pushed outside anything it trained on: 24.6% falls to 6.1% |
 | **14% of frames** | is all it hands to the real solver to get there |
 | **0.99 AUROC** | at ranking its own worst frames, learned with no physics rules written in |
 | **3x better** | than spending the same solver budget on random or scheduled frames (about 20% error) |
-| **5 MB, 60 fps** | in a browser tab, with no server and no install |
+| **5 MB, up to 60 fps** | in a browser tab on a recent laptop, with no server and no install (speed depends on your device) |
 | **2.3 hours** | to train from scratch on a single Apple M4, with zero external data and zero downloads |
 
 ## Why this matters
@@ -66,6 +68,21 @@ The evaluation uses held-out episodes: 24 episodes of 150 frames each, in `resul
 | Light | Dark |
 |---|---|
 | ![Lucid UI, light](results/ui_light.png) | ![Lucid UI, dark](results/ui_dark.png) |
+
+## Where the pattern applies
+
+The model here is a toy. The pattern it demonstrates (a surrogate that estimates its own error and defers to a trusted solver) matters wherever neural simulators stand in for expensive ones:
+- **Weather and climate:** neural forecasters are fast but can drift on rare, extreme inputs.
+- **Engineering CFD:** screening thousands of design variants, with unusual ones sent to the full solver.
+- **Chip and battery thermals:** fast estimates during layout, with doubtful hotspots re-solved.
+- **Digital twins and control:** answers in milliseconds, plus a flag when the model leaves its trusted range.
+- **Real-time graphics and robotics simulation:** plausible physics with a fallback when it goes off.
+
+Lucid is not a tool for any of these fields and has not been tested in them. Getting there would need 3D, real geometry and boundaries, external benchmark data, and a fresh check of the self-check in each setting.
+
+## Why 2D
+
+The simulation is a flat 64x64 grid: two velocity components and a smoke density per cell. 2D keeps training to 2.3 hours on one laptop and lets the whole thing run live in a browser. A 64x64x64 grid has 64 times more cells, which moves training to rented GPUs. The trade-off is stated under Limits: at this size there is no speedup, so the repo shows error control only.
 
 ## What you can do with it
 - **Play with it:** [live demo](https://maxwell-khavari.github.io/lucid/), on desktop or phone.
@@ -122,20 +139,22 @@ Lucid is a technical project. It measures and demonstrates how well a small surr
 - a version anyone can run in a browser
 
 Prior work this builds on:
-- J. Stam, *Stable Fluids*, SIGGRAPH 1999. The reference solver.
-- XRePIT (arXiv:2510.21804). A deep-learning and CFD hybrid in OpenFOAM that falls back to the solver when a residual crosses a threshold.
-- Hybrid Neural-MPM (arXiv:2505.18926). A real-time neural fluid that falls back to a classical MPM solver.
-- Hybrid Neural World Models (arXiv:2605.28317). Uses a surrogate's error map to gate a reference-solver fallback.
-- A. Graves, *Adaptive Computation Time for Recurrent Neural Networks*, 2016, and related work on learning when to spend compute.
+- J. Stam, [*Stable Fluids*](https://doi.org/10.1145/311535.311548), SIGGRAPH 1999. The reference solver.
+- S. Baral, Y. Lee, S. Khanal, J. Jeon, [*XRePIT*](https://arxiv.org/abs/2510.21804), 2025. A deep-learning and CFD hybrid in OpenFOAM that hands control back to the solver when a residual crosses a threshold.
+- J. Xu et al., [*Hybrid Neural-MPM for Interactive Fluid Simulations in Real-Time*](https://arxiv.org/abs/2505.18926), 2025. A real-time neural fluid with a fallback to a classical MPM solver.
+- P. Lakshmanan, P. Chopra, [*Hybrid Neural World Models*](https://arxiv.org/abs/2605.28317), 2026. Uses a surrogate's error map to decide which trajectories go to a reference solver.
+- A. Graves, [*Adaptive Computation Time for Recurrent Neural Networks*](https://arxiv.org/abs/1603.08983), 2016, and related work on learning when to spend compute.
 
-Lucid is independent and is not affiliated with or endorsed by any of these authors.
+Lucid is an independent personal project. It is not affiliated with or endorsed by any of these authors, by any university or employer, or by any company that uses the name Lucid.
 
-The prior work and citations above were found with the help of AI-assisted (agentic) search. Titles, identifiers and one-line summaries may contain minor errors or discrepancies. Please check the original sources before relying on them, and open an issue if something is wrong.
+The prior work and citations above were found with the help of AI-assisted (agentic) search. Each arXiv identifier was checked against its abstract page on 2026-10-21, but the one-line summaries are short paraphrases and may contain minor errors or discrepancies. Please check the original sources before relying on them, and open an issue if something is wrong.
 
 ## License and disclaimer
 
 Copyright 2026 Maxwell Khavari. Code and weights are licensed under the **[PolyForm Noncommercial License 1.0.0](LICENSE)**.
 - **Free:** personal use, research, education and nonprofit use.
 - **Commercial use:** needs written permission.
+
+Third-party software used by the project is listed in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). Contributions: see [CONTRIBUTING.md](CONTRIBUTING.md). To cite: [CITATION.cff](CITATION.cff).
 
 This is a research demo of a toy 2D fluid. It is provided **as is, without warranty of any kind**. As far as the law allows, the author is not liable for any damages arising from its use. It is not validated for, and must not be used for, engineering, safety, medical, financial or any other real-world decision.

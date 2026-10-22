@@ -7,3 +7,5 @@ node_modules/
 .env.*
 *.pem
 *.key
+linkedin/
+go-public.sh
