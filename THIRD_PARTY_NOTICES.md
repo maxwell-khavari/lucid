@@ -1,12 +1,12 @@
 # Third-party notices
 
-Lucid's own code and weights are under the PolyForm Noncommercial License 1.0.0 (see LICENSE). The project relies on the third-party software below. None of it is copied into this repository; each is fetched by the user or the browser from its own source and stays under its own license.
+Lucid's own code and weights are under the PolyForm Noncommercial License 1.0.0 (see LICENSE). The project relies on the third-party software below. Apart from the IBM Plex font files, none of it is copied into this repository; each is fetched by the user or the browser from its own source. Every component stays under its own license.
 
 ## Loaded by the browser demo
 | Component | Source | License |
 |---|---|---|
 | onnxruntime-web 1.20.1 | jsDelivr or unpkg CDN | MIT, Copyright Microsoft Corporation |
-| IBM Plex Sans, IBM Plex Mono | Google Fonts | SIL Open Font License 1.1, Copyright IBM Corp. |
+| IBM Plex Sans, IBM Plex Mono | bundled in `web/fonts/` (from the Fontsource package) | SIL Open Font License 1.1, Copyright 2018 IBM Corp. License text: `web/fonts/OFL.txt` |
 
 ## Installed by the user to train, evaluate or export
 | Component | License |
